@@ -1,28 +1,37 @@
 "use client"
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import SettingsPanel from '@/components/SettingsPanel';
+
+interface Message {
+  id: number;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface Conversation {
+  id: number;
+  name: string;
+  messages: Message[];
+  lastUpdated: Date;
+}
 
 function AIChatInterface() {
+  const router = useRouter();
   const [EFFECTS_ENABLED, setEffectsEnabled] = useState(true);
   const [currentEffect, setCurrentEffect] = useState('random-cycle');
-  const [activeEffectInstance, setActiveEffectInstance] = useState(null);
+  const [activeEffectInstance, setActiveEffectInstance] = useState<any>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showLogin, setShowLogin] = useState(true);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [signupData, setSignupData] = useState({ 
-    name: '', email: '', password: '', confirmPassword: '' 
-  });
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([]); // New: store chat history
-  const [conversations, setConversations] = useState([
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([
     { id: 1, name: 'Current conversation', messages: [], lastUpdated: new Date() }
-  ]); // New: conversation management
+  ]);
   const [currentConversationId, setCurrentConversationId] = useState(1);
   const [showConversationDropdown, setShowConversationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [loginError, setLoginError] = useState(false); // New: login error state
-  const [showPassword, setShowPassword] = useState(false); // New: password visibility toggle
   
   // Connection Status - Hook this to your API connectivity
   // TODO: Replace with actual API connection monitoring
@@ -808,43 +817,23 @@ function AIChatInterface() {
     }
   }, [EFFECTS_ENABLED]);
 
-  const handleLogin = () => {
-    // Check for wrong credentials (for demo purposes)
-    if (loginData.email === 'wrong' && loginData.password === 'wrong') {
-      // Store current values to restore later
-      const originalEmail = loginData.email;
-      const originalPassword = loginData.password;
-      
-      // Trigger error state and clear fields to show error placeholders
-      setLoginError(true);
-      setLoginData({ email: '', password: '' });
-      
-      // Reset error state and restore values after 1 second
-      setTimeout(() => {
-        setLoginError(false);
-        setLoginData({ email: originalEmail, password: originalPassword });
-      }, 1000);
-      
-      return; // Don't proceed with login
-    }
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    // TODO: Replace with actual authentication check
+    // For now, assume user is authenticated if on this page
+    // In real app, check auth token/session here
+    const isUserAuthenticated = true; // Replace with real auth check
     
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1500);
-  };
+    if (!isUserAuthenticated) {
+      router.push('/login');
+    }
+  }, [router]);
 
-  const handleSignup = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1500);
+  const handleSignOut = () => {
+    // TODO: Clear authentication tokens/session
+    router.push('/login');
   };
-
-  const handleSignOut = () => setIsAuthenticated(false);
-  const toggleAuth = () => setShowLogin(!showLogin);
+  
   const toggleSettings = () => setShowSettings(!showSettings);
   
   const handleSendMessage = () => {
@@ -891,7 +880,7 @@ function AIChatInterface() {
   };
 
   // Switch to a different conversation
-  const switchConversation = (conversationId) => {
+  const switchConversation = (conversationId: number) => {
     const conversation = conversations.find(conv => conv.id === conversationId);
     if (conversation) {
       setCurrentConversationId(conversationId);
@@ -928,8 +917,8 @@ function AIChatInterface() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showConversationDropdown && !event.target.closest('.conversation-dropdown')) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showConversationDropdown && !(event.target as Element)?.closest('.conversation-dropdown')) {
         setShowConversationDropdown(false);
       }
     };
@@ -982,121 +971,25 @@ function AIChatInterface() {
               ⚙️ Settings
             </button>
 
-            {isAuthenticated && (
-              <button 
-                className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200"
-                onClick={handleSignOut}
-              >
-                Sign Out
-              </button>
-            )}
+            <button 
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200"
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </header>
 
-      <div className={`fixed top-0 right-0 h-full w-80 bg-black/95 backdrop-blur-2xl border-l border-white/25 shadow-2xl shadow-black/50 transform transition-all duration-300 ease-in-out z-30 ${
-        showSettings ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        <div className="p-6 h-full overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Settings
-            </h2>
-            <button 
-              className="w-8 h-8 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 rounded-lg text-sm transition-all duration-200 flex items-center justify-center"
-              onClick={toggleSettings}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="mb-8">
-            <div className="bg-white/8 backdrop-blur-sm border border-white/25 rounded-2xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
-              
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-white">Visual Effects</h3>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={EFFECTS_ENABLED}
-                    onChange={(e) => setEffectsEnabled(e.target.checked)}
-                    className="w-5 h-5 rounded border-2 border-white/30 bg-white/10"
-                  />
-                  <span className={`text-sm font-medium transition-all duration-200 ${
-                    EFFECTS_ENABLED ? 'text-cyan-300' : 'text-gray-400'
-                  }`}>
-                    {EFFECTS_ENABLED ? 'Enabled' : 'Disabled'}
-                  </span>
-                </label>
-              </div>
-              
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Master control for all background visual effects and animations.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Background Effects</h3>
-            
-            <div className="space-y-3">
-              {backgroundEffectOptions.map((option) => (
-                <div key={option.value} className="group">
-                  <button
-                    className={`w-full text-left bg-white/8 hover:bg-white/15 backdrop-blur-sm border rounded-2xl p-4 transition-all duration-200 ${
-                      currentEffect === option.value 
-                        ? 'border-cyan-400/60 bg-cyan-500/15 shadow-lg shadow-cyan-500/10' 
-                        : 'border-white/25 hover:border-white/40'
-                    }`}
-                    onClick={() => handleEffectChange(option.value)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`font-medium transition-colors duration-200 ${
-                        currentEffect === option.value ? 'text-cyan-300' : 'text-white group-hover:text-cyan-200'
-                      }`}>
-                        {option.label}
-                      </span>
-                      
-                      {currentEffect === option.value && (
-                        <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"></div>
-                      )}
-                    </div>
-                    
-                    <p className={`text-xs leading-relaxed transition-colors duration-200 ${
-                      currentEffect === option.value ? 'text-cyan-100/80' : 'text-gray-400 group-hover:text-gray-300'
-                    }`}>
-                      {option.description}
-                    </p>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-white/15">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${
-                  EFFECTS_ENABLED ? 'bg-green-400 shadow-sm shadow-green-400/50' : 'bg-gray-400'
-                }`}></div>
-                <span className="text-xs font-medium text-gray-300">
-                  Current Status
-                </span>
-              </div>
-              <p className="text-xs text-gray-400">
-                Effects: <span className={EFFECTS_ENABLED ? 'text-green-400' : 'text-gray-400'}>
-                  {EFFECTS_ENABLED ? 'Active' : 'Disabled'}
-                </span>
-                <br />
-                Mode: <span className="text-cyan-400">
-                  {backgroundEffectOptions.find(opt => opt.value === currentEffect)?.label}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SettingsPanel
+        showSettings={showSettings}
+        toggleSettings={toggleSettings}
+        EFFECTS_ENABLED={EFFECTS_ENABLED}
+        setEffectsEnabled={setEffectsEnabled}
+        currentEffect={currentEffect}
+        handleEffectChange={handleEffectChange}
+        backgroundEffectOptions={backgroundEffectOptions}
+      />
 
       {showSettings && (
         <div 
@@ -1106,133 +999,18 @@ function AIChatInterface() {
       )}
 
       <main className="flex-1 p-4 sm:p-6 max-w-6xl mx-auto w-full relative z-20">
-        {!isAuthenticated ? (
-          <div className="flex items-center justify-center min-h-96">
-            <div className="w-full max-w-md mx-4">
-              <div className="bg-white/12 backdrop-blur-2xl border border-white/25 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-black/40 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent"></div>
-                
-                <div className="relative z-10">
-                  <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-white via-cyan-100 to-blue-100 bg-clip-text text-transparent"
-                      style={{
-                        textShadow: (EFFECTS_ENABLED && activeEffectInstance && activeEffectInstance.constructor.name === 'NeuralNetworkEffect') ? 
-                          '0 0 8px rgba(6, 182, 212, 0.5), 0 0 16px rgba(6, 182, 212, 0.3), 0 0 24px rgba(6, 182, 212, 0.2)' : 
-                          'none'
-                      }}>
-                    {showLogin ? 'Sign In' : 'Create Account'}
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    {!showLogin && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">Full Name</label>
-                        <input
-                          type="text"
-                          className="w-full bg-white/8 backdrop-blur-sm border border-white/25 rounded-xl px-4 py-3 text-white placeholder-gray-400"
-                          value={signupData.name}
-                          onChange={(e) => setSignupData({...signupData, name: e.target.value})}
-                          placeholder="Enter your full name"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-200 mb-2">Email</label>
-                      <input
-                        type="email"
-                        className={`w-full backdrop-blur-sm rounded-xl px-4 py-3 text-white transition-all duration-300 ${
-                          loginError 
-                            ? 'bg-red-500/20 border-2 border-red-400 placeholder-red-300 shadow-lg shadow-red-500/25' 
-                            : 'bg-white/8 border border-white/25 placeholder-gray-400'
-                        }`}
-                        value={showLogin ? loginData.email : signupData.email}
-                        onChange={(e) => showLogin 
-                          ? setLoginData({...loginData, email: e.target.value})
-                          : setSignupData({...signupData, email: e.target.value})
-                        }
-                        placeholder={loginError ? "Wrong" : "Enter your email"}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-200 mb-2">Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          className={`w-full backdrop-blur-sm rounded-xl px-4 py-3 pr-12 text-white transition-all duration-300 ${
-                            loginError 
-                              ? 'bg-red-500/20 border-2 border-red-400 placeholder-red-300 shadow-lg shadow-red-500/25' 
-                              : 'bg-white/8 border border-white/25 placeholder-gray-400'
-                          }`}
-                          value={showLogin ? loginData.password : signupData.password}
-                          onChange={(e) => showLogin 
-                            ? setLoginData({...loginData, password: e.target.value})
-                            : setSignupData({...signupData, password: e.target.value})
-                          }
-                          placeholder={loginError ? "Password" : (showLogin ? "Enter your password" : "Create a password")}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? "•••" : "👁️"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {!showLogin && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-200 mb-2">Confirm Password</label>
-                        <input
-                          type="password"
-                          className="w-full bg-white/8 backdrop-blur-sm border border-white/25 rounded-xl px-4 py-3 text-white placeholder-gray-400"
-                          value={signupData.confirmPassword}
-                          onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
-                          placeholder="Confirm your password"
-                        />
-                      </div>
-                    )}
-
-                    <button 
-                      className={`w-full py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 ${
-                        isLoading
-                          ? 'bg-gradient-to-r from-blue-600/50 to-cyan-600/50 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500'
-                      }`}
-                      onClick={showLogin ? handleLogin : handleSignup}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Processing...' : (showLogin ? 'Sign In' : 'Create Account')}
-                    </button>
-
-                    <p className="text-center text-sm text-gray-300">
-                      {showLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-                      <button 
-                        className="text-cyan-400 hover:text-cyan-300 transition-colors duration-200"
-                        onClick={toggleAuth}
-                      >
-                        {showLogin ? 'Sign Up' : 'Sign In'}
-                      </button>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-            {/* Chat Messages Area */}
-            <div className="bg-white/2 backdrop-blur-sm border border-white/15 rounded-3xl mb-6 h-96 shadow-2xl shadow-black/20 relative overflow-hidden flex flex-col">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
-              
-              {/* Conversation Selector */}
-              <div className="relative p-4 border-b border-white/10">
-                <button
-                  className="flex items-center justify-between w-48 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 hover:border-white/30 rounded-xl px-3 py-2 text-sm text-gray-300 hover:text-white transition-all duration-200"
-                  onClick={() => setShowConversationDropdown(!showConversationDropdown)}
-                >
-                  <span className="truncate">{currentConversation?.name || 'Current conversation'}</span>
+        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+          {/* Chat Messages Area */}
+          <div className="bg-white/2 backdrop-blur-sm border border-white/15 rounded-3xl mb-6 h-96 shadow-2xl shadow-black/20 relative overflow-hidden flex flex-col">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
+            
+            {/* Conversation Selector */}
+            <div className="relative p-4 border-b border-white/10">
+              <button
+                className="flex items-center justify-between w-48 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 hover:border-white/30 rounded-xl px-3 py-2 text-sm text-gray-300 hover:text-white transition-all duration-200"
+                onClick={() => setShowConversationDropdown(!showConversationDropdown)}
+              >
+                <span className="truncate">{currentConversation?.name || 'Current conversation'}</span>
                   <span className={`ml-2 transition-transform duration-200 ${showConversationDropdown ? 'rotate-180' : ''}`}>
                     ▼
                   </span>
@@ -1240,7 +1018,7 @@ function AIChatInterface() {
                 
                 {/* Dropdown Menu */}
                 {showConversationDropdown && (
-                  <div className="absolute top-full left-4 mt-2 w-64 bg-black/90 backdrop-blur-xl border border-white/25 rounded-2xl shadow-2xl shadow-black/50 z-30 max-h-64 overflow-hidden">
+                  <div className="conversation-dropdown absolute top-full left-4 mt-2 w-64 bg-black/90 backdrop-blur-xl border border-white/25 rounded-2xl shadow-2xl shadow-black/50 z-30 max-h-64 overflow-hidden">
                     {/* New Conversation Button */}
                     <button
                       className="w-full text-left px-4 py-3 text-sm text-cyan-400 hover:bg-white/10 transition-colors duration-200 border-b border-white/10"
@@ -1337,7 +1115,6 @@ function AIChatInterface() {
             </div>
 
             {/* Chat Input Area */}
-
             <div className="bg-white/6 backdrop-blur-2xl border border-white/25 rounded-3xl p-4 shadow-xl shadow-black/20 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
               
@@ -1371,7 +1148,7 @@ function AIChatInterface() {
               </div>
             </div>
           </div>
-        )}
+        </div>
       </main>
 
       <footer className="h-12 bg-white/8 backdrop-blur-xl border-t border-white/15 px-4 sm:px-6 shadow-lg shadow-black/10">
