@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 
 export interface Message {
   id: number;
-  type: 'user' | 'assistant';
+  role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
 }

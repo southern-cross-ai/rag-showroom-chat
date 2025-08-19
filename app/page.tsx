@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 
 // Components
 import SettingsPanel from '@/components/SettingsPanel';
@@ -14,33 +12,14 @@ import ConversationSelector from '@/components/ConversationSelector';
 
 // Hooks
 import { useBackgroundEffects } from '@/hooks/useBackgroundEffects';
-import { useConversations } from '@/hooks/useConversations';
 import { useChat } from '@/hooks/useChat';
 
 export default function HomePage() {
-  const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState('Connected');
 
   // Custom hooks for modular functionality
   const backgroundEffects = useBackgroundEffects();
-  const conversations = useConversations();
   const chat = useChat();
-
-  // Auth check
-  useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/login');
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
 
   // Auto-scroll chat to bottom when new messages arrive
   useEffect(() => {
@@ -48,55 +27,17 @@ export default function HomePage() {
     if (chatContainer) {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-  }, [conversations.messages]);
+  }, [chat.messages]);
 
   const toggleSettings = () => setShowSettings(!showSettings);
 
-  // This is where you'll integrate AI SDK v5
+  // Simplified send message using AI SDK
   const handleSendMessage = async () => {
     if (!chat.input.trim()) return;
 
-    const userMessage = chat.input.trim();
-    chat.clearInput();
-    chat.setLoading(true);
-
-    // Add user message immediately
-    conversations.addMessage({
-      type: 'user',
-      content: userMessage
-    });
-
-    try {
-      // TODO: Replace this with AI SDK v5 integration
-      // Example structure for AI SDK v5:
-      // const response = await openai.chat.completions.create({
-      //   model: "gpt-4",
-      //   messages: [
-      //     ...conversations.messages.map(msg => ({
-      //       role: msg.type === 'user' ? 'user' : 'assistant',
-      //       content: msg.content
-      //     })),
-      //     { role: 'user', content: userMessage }
-      //   ]
-      // });
-
-      // Simulate AI response for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      conversations.addMessage({
-        type: 'assistant',
-        content: `This is a simulated response to: "${userMessage}". Replace this with AI SDK v5 integration.`
-      });
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      chat.setErrorMessage('Failed to send message. Please try again.');
-    } finally {
-      chat.setLoading(false);
-    }
-  };
-
-  return (
+    // AI SDK will handle everything: user message, API call, and AI response
+    await chat.sendMessage(chat.input);
+  };  return (
     <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
       {/* Background Effects Container */}
       <div 
@@ -139,28 +80,22 @@ export default function HomePage() {
           
           {/* Conversation Selector */}
           <ConversationSelector
-            conversations={conversations.conversations}
-            currentConversationId={conversations.currentConversationId}
-            onConversationSelect={conversations.switchConversation}
-            onNewConversation={conversations.createNewConversation}
+            conversations={chat.conversations}
+            currentConversationId={chat.currentConversationId}
+            onConversationSelect={chat.switchConversation}
+            onNewConversation={chat.createNewConversation}
           />
 
           {/* Chat Messages */}
           <ChatMessages 
-            messages={conversations.messages}
+            messages={chat.messages}
             isLoading={chat.isLoading}
           />
 
           {/* Error Display */}
           {chat.error && (
             <div className="mb-4 p-3 bg-red-500/20 border border-red-400/30 rounded-2xl text-red-200 text-sm">
-              {chat.error}
-              <button 
-                onClick={() => chat.setErrorMessage(null)}
-                className="ml-2 text-red-400 hover:text-red-300"
-              >
-                ✕
-              </button>
+              {chat.error.message || 'An error occurred'}
             </div>
           )}
 

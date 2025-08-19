@@ -9,11 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.16",
+    "@ai-sdk/react": "^2.0.16",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.54.0",
+    "ai": "^5.0.16",
     "next": "15.4.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

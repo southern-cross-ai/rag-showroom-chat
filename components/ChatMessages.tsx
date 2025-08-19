@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Message } from '@/hooks/useConversations';
+import { UIMessage } from 'ai';
 
 interface ChatMessagesProps {
-  messages: Message[];
+  messages: UIMessage[];
   isLoading: boolean;
 }
 
@@ -26,15 +26,26 @@ export default function ChatMessages({ messages, isLoading }: ChatMessagesProps)
         ) : (
           <div className="space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                  message.type === 'user' 
+                  message.role === 'user' 
                     ? 'bg-cyan-500/20 border border-cyan-400/30 text-cyan-100' 
                     : 'bg-white/10 border border-white/20 text-white'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                }`}> 
+                {message.parts.map((part, index) => (
+                    (() => {
+                        switch (part.type) {
+                            case 'text':
+                                return <p key={index} className="whitespace-pre-wrap">{part.text}</p>;
+                            case 'step-start':
+                                return null;
+                            default:
+                                return <p key={index} className="text-xs opacity-60 mt-1">{part.type} not supported.</p>;
+                        }
+                    })()
+                ))}
                   <p className="text-xs opacity-60 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {/* {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} */}
                   </p>
                 </div>
               </div>
