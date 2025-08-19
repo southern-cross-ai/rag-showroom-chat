@@ -38,7 +38,8 @@ export function useBackgroundEffects() {
   }, []);
 
   const getRandomEffect = useCallback(() => {
-    return 'neural-network';
+    const effects = ['neural-network', 'minimal'];
+    return effects[Math.floor(Math.random() * effects.length)];
   }, []);
 
   const transitionToEffect = useCallback(async (newEffectType: string) => {

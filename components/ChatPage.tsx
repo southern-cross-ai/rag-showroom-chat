@@ -44,6 +44,7 @@ export default function ChatPage({ conversationId, initialMessages, conversation
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* Background Effects */}
       <div 
+        ref={backgroundEffects.effectContainerRef}
         className="fixed inset-0 pointer-events-none z-10 transition-opacity duration-300"
         style={{ opacity: backgroundEffects.EFFECTS_ENABLED ? 1 : 0 }}
       >
