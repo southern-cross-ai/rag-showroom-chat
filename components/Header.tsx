@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   toggleSettings: () => void;
@@ -44,10 +45,6 @@ export default function Header({
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-  };
 
   const isLoggedIn = !!user;
   return (
@@ -77,12 +74,14 @@ export default function Header({
           {isLoading ? (
             <div className="w-16 h-6 bg-white/10 animate-pulse rounded"></div>
           ) : isLoggedIn ? (
-            <button
-              onClick={handleSignOut}
-              className="text-xs sm:text-sm text-white hover:text-cyan-400 transition-colors duration-200 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 px-2 sm:px-3 py-1 rounded-lg"
-            >
-              Sign Out
-            </button>
+            <form action="/auth/signout" method="POST">
+              <button
+                type="submit"
+                className="text-xs sm:text-sm text-white hover:text-cyan-400 transition-colors duration-200 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/40 px-2 sm:px-3 py-1 rounded-lg"
+              >
+                Sign Out
+              </button>
+            </form>
           ) : (
             <Link
               href="/login"
