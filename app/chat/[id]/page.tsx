@@ -1,26 +1,19 @@
-import { redirect } from 'next/navigation';
 import { loadConversation, getUserConversations } from '@/utils/chat-store';
-import { createClient } from '@/utils/supabase/server';
 import ChatPage from '@/components/ChatPage';
 
-export default async function ConversationPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
-}) {
+export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  
-  
+
   try {
     // Load both the conversation messages and all user conversations server-side
     const [initialMessages, conversations] = await Promise.all([
       loadConversation(id),
-      getUserConversations()
+      getUserConversations(),
     ]);
-    
+
     return (
-      <ChatPage 
-        conversationId={id} 
+      <ChatPage
+        conversationId={id}
         initialMessages={initialMessages}
         conversations={conversations}
       />
@@ -30,13 +23,7 @@ export default async function ConversationPage({
     // If conversation doesn't exist or there's an error, still load user conversations
     try {
       const conversations = await getUserConversations();
-      return (
-        <ChatPage 
-          conversationId={id} 
-          initialMessages={[]} 
-          conversations={conversations}
-        />
-      );
+      return <ChatPage conversationId={id} initialMessages={[]} conversations={conversations} />;
     } catch (fallbackError) {
       // Final fallback
       console.error('Error loading conversations:', fallbackError);

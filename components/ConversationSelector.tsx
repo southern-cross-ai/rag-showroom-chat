@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { StoredConversation } from '@/utils/chat-store-client';
+import { StoredConversation } from '@/utils/chat-store';
 
 interface ConversationSelectorProps {
   conversations: StoredConversation[];
