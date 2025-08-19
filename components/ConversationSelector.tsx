@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Conversation } from '@/hooks/useConversations';
+import { StoredConversation } from '@/utils/chat-store-client';
 
 interface ConversationSelectorProps {
-  conversations: Conversation[];
-  currentConversationId: number;
-  onConversationSelect: (id: number) => void;
+  conversations: StoredConversation[];
+  currentConversationId?: string;
+  onConversationSelect: (id: string) => void;
   onNewConversation: () => void;
 }
 
@@ -30,10 +30,10 @@ export default function ConversationSelector({
           >
             <div>
               <h3 className="text-lg font-semibold text-white">
-                {currentConversation?.name || 'Select Conversation'}
+                {currentConversation?.title || 'Select Conversation'}
               </h3>
               <p className="text-xs text-gray-400">
-                {currentConversation?.messages.length || 0} messages
+                {currentConversationId ? 'Active conversation' : 'No conversation selected'}
               </p>
             </div>
             <div className={`transform transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`}>
@@ -57,9 +57,9 @@ export default function ConversationSelector({
                       setShowDropdown(false);
                     }}
                   >
-                    <div className="font-medium">{conversation.name}</div>
+                    <div className="font-medium">{conversation.title}</div>
                     <div className="text-xs text-gray-400">
-                      {conversation.messages.length} messages • {conversation.lastUpdated.toLocaleDateString()}
+                      Created {new Date(conversation.created_at).toLocaleDateString()}
                     </div>
                   </button>
                 ))}

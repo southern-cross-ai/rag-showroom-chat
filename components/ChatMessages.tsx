@@ -25,7 +25,7 @@ export default function ChatMessages({ messages, isLoading }: ChatMessagesProps)
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((message) => (
+            {messages.map((message, messageIndex) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                   message.role === 'user' 
@@ -51,7 +51,24 @@ export default function ChatMessages({ messages, isLoading }: ChatMessagesProps)
               </div>
             ))}
             
-            {isLoading && (
+            {/* Only show loading if we're loading AND the last message was from user */}
+            {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
+              <div className="flex justify-start">
+                <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl bg-white/10 border border-white/20 text-white">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-xs text-gray-300">AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Show loading for empty conversation */}
+            {isLoading && messages.length === 0 && (
               <div className="flex justify-start">
                 <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl bg-white/10 border border-white/20 text-white">
                   <div className="flex items-center space-x-2">

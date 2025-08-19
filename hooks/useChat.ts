@@ -1,58 +1,51 @@
 import { useChat as useAIChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, UIMessage } from 'ai';
 import { useState } from 'react';
-import { useConversations } from './useConversations';
+import { useRouter } from 'next/navigation';
 
-export function useChat() {
-  const conversations = useConversations();
+export function useChat(conversationId?: string, initialMessages?: UIMessage[]) {
   const [input, setInput] = useState('');
+  const router = useRouter();
   
   const { messages, sendMessage, status, error, stop } = useAIChat({
+    id: conversationId,
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: '/api/chat',
+      // Send only the last message to reduce payload
+      prepareSendMessagesRequest({ messages, id }) {
+        return { 
+          body: { 
+            message: messages[messages.length - 1], 
+            conversationId: id 
+          } 
+        };
+      },
     }),
-    onFinish: (message) => {
-      // When AI response finishes, save to conversation history
-      conversations.addMessage({
-        role: 'assistant',
-        content: getMessageText(message.message)
-      });
-    },
     onError: (error: Error) => {
       console.error('AI Chat Error:', error);
     }
   });
-
-  // Helper function to extract text from UIMessage
-  const getMessageText = (message: any) => {
-    if (typeof message.content === 'string') {
-      return message.content;
-    }
-    if (Array.isArray(message.content)) {
-      return message.content
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join('');
-    }
-    return '';
-  };
 
   // Custom send message wrapper
   const handleSendMessage = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent) return;
 
-    // Add user message to conversation immediately
-    conversations.addMessage({
-      role: 'user',
-      content: messageContent
-    });
-
     // Clear input
     setInput('');
 
     // Send to AI using AI SDK
     await sendMessage({ text: messageContent });
+  };
+
+  const createNewConversation = async () => {
+    // Navigate to new chat page which will create conversation server-side
+    router.push('/chat');
+  };
+
+  const switchConversation = (conversationId: string) => {
+    router.push(`/chat/${conversationId}`);
   };
 
   return {
@@ -64,15 +57,13 @@ export function useChat() {
     stop,
     status,
     
-    // Input management (needed for compatibility)
+    // Input management
     input,
     setInput,
     
-    // Conversation management
-    conversations: conversations.conversations,
-    currentConversation: conversations.currentConversation,
-    currentConversationId: conversations.currentConversationId,
-    switchConversation: conversations.switchConversation,
-    createNewConversation: conversations.createNewConversation
+    // Navigation functions
+    currentConversationId: conversationId,
+    switchConversation,
+    createNewConversation,
   };
 }

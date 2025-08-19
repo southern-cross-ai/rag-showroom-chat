@@ -310,7 +310,7 @@ import BackgroundEffect from "./BackgroundEffect";
       }
     }
 
-    createLightningPath(particle1, particle2) {
+    createLightningPath(particle1: any, particle2: any) {
       const segments = [];
       const numSegments = 8 + Math.floor(Math.random() * 6);
       

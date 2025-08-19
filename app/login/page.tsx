@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import NeuralNetworkEffect from '@/components/background-effects/NeuralNetworkEffect';
 import MinimalEffect from '@/components/background-effects/MinimalEffect';
 import Header from '@/components/Header';
 import SettingsPanel from '@/components/SettingsPanel';
 import Footer from '@/components/Footer';
+import { signup, login } from './actions';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [EFFECTS_ENABLED, setEffectsEnabled] = useState(true);
   const [currentEffect, setCurrentEffect] = useState('random-cycle');
   const [activeEffectInstance, setActiveEffectInstance] = useState<
@@ -26,7 +25,7 @@ export default function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [loginError, setLoginError] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -176,39 +175,46 @@ export default function LoginPage() {
     }
   }, [EFFECTS_ENABLED]);
 
-  const handleLogin = () => {
-    // Check for wrong credentials (for demo purposes)
-    if (loginData.email === 'wrong' && loginData.password === 'wrong') {
-      // Store current values to restore later
-      const originalEmail = loginData.email;
-      const originalPassword = loginData.password;
-
-      // Trigger error state and clear fields to show error placeholders
-      setLoginError(true);
-      setLoginData({ email: '', password: '' });
-
-      // Reset error state and restore values after 1 second
-      setTimeout(() => {
-        setLoginError(false);
-        setLoginData({ email: originalEmail, password: originalPassword });
-      }, 1000);
-
-      return; // Don't proceed with login
-    }
-
+  const handleLogin = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      // Redirect to main chat page after successful login
-      router.push('/');
-    }, 1500);
+    setAuthError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('email', loginData.email);
+      formData.append('password', loginData.password);
+      
+      await login(formData);
+    } catch (error) {
+      console.error('Login error:', error);
+      setAuthError(error instanceof Error ? error.message : 'Invalid email or password');
+      setIsLoading(false);
+    }
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      // Redirect to main chat page after successful signup
-      router.push('/');
-    }, 1500);
+    setAuthError(null);
+    
+    // Validate password confirmation
+    if (signupData.password !== signupData.confirmPassword) {
+      setAuthError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('name', signupData.name);
+      formData.append('email', signupData.email);
+      formData.append('password', signupData.password);
+      
+      await signup(formData);
+    } catch (error) {
+      console.error('Signup error:', error);
+      setAuthError(error instanceof Error ? error.message : 'Signup failed');
+      setIsLoading(false);
+    }
   };
 
   const toggleAuth = () => setShowLogin(!showLogin);
@@ -324,7 +330,7 @@ export default function LoginPage() {
                     <input
                       type="email"
                       className={`w-full backdrop-blur-sm rounded-xl px-4 py-3 text-white transition-all duration-300 ${
-                        loginError
+                        authError
                           ? 'bg-red-500/20 border-2 border-red-400 placeholder-red-300 shadow-lg shadow-red-500/25'
                           : 'bg-white/8 border border-white/25 placeholder-gray-400'
                       }`}
@@ -334,7 +340,7 @@ export default function LoginPage() {
                           ? setLoginData({ ...loginData, email: e.target.value })
                           : setSignupData({ ...signupData, email: e.target.value })
                       }
-                      placeholder={loginError ? 'Wrong' : 'Enter your email'}
+                      placeholder="Enter your email"
                     />
                   </div>
 
@@ -344,7 +350,7 @@ export default function LoginPage() {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         className={`w-full backdrop-blur-sm rounded-xl px-4 py-3 pr-12 text-white transition-all duration-300 ${
-                          loginError
+                          authError
                             ? 'bg-red-500/20 border-2 border-red-400 placeholder-red-300 shadow-lg shadow-red-500/25'
                             : 'bg-white/8 border border-white/25 placeholder-gray-400'
                         }`}
@@ -354,13 +360,7 @@ export default function LoginPage() {
                             ? setLoginData({ ...loginData, password: e.target.value })
                             : setSignupData({ ...signupData, password: e.target.value })
                         }
-                        placeholder={
-                          loginError
-                            ? 'Password'
-                            : showLogin
-                              ? 'Enter your password'
-                              : 'Create a password'
-                        }
+                        placeholder={showLogin ? 'Enter your password' : 'Create a password'}
                       />
                       <button
                         type="button"
@@ -386,6 +386,13 @@ export default function LoginPage() {
                         }
                         placeholder="Confirm your password"
                       />
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {authError && (
+                    <div className="p-3 bg-red-500/20 border border-red-400/30 rounded-xl text-red-200 text-sm">
+                      {authError}
                     </div>
                   )}
 
