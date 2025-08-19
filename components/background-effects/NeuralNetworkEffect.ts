@@ -8,7 +8,7 @@ import BackgroundEffect from "./BackgroundEffect";
     time: number = 0;
     resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     lastLightningTime: number = 0;
-    handleResize: () => void;
+    handleResize?: () => void;
 
     initialize() {
       this.particles = [];
@@ -35,8 +35,9 @@ import BackgroundEffect from "./BackgroundEffect";
         this.resizeTimeout = setTimeout(() => {
           const canvas = this.getCanvas();
           if (canvas) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const ctxCanvas = canvas as HTMLCanvasElement;
+            ctxCanvas.width = window.innerWidth;
+            ctxCanvas.height = window.innerHeight;
           }
         }, 250);
       };
@@ -335,8 +336,9 @@ import BackgroundEffect from "./BackgroundEffect";
       const canvas = this.getCanvas();
       if (!canvas) return;
       
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const ctx = (canvas as HTMLCanvasElement).getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       
       if (this.particles.length === 0) return;
       
@@ -539,18 +541,19 @@ import BackgroundEffect from "./BackgroundEffect";
       if (!canvas) {
         canvas = document.createElement('canvas');
         canvas.className = 'effect-canvas';
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100vw';
-        canvas.style.height = '100vh';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '12';
-        canvas.style.opacity = '1';
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        this.container.appendChild(canvas);
-        this.elements.push(canvas);
+        const canvasEl = canvas as HTMLCanvasElement;
+        canvasEl.style.position = 'fixed';
+        canvasEl.style.top = '0';
+        canvasEl.style.left = '0';
+        canvasEl.style.width = '100vw';
+        canvasEl.style.height = '100vh';
+        canvasEl.style.pointerEvents = 'none';
+        canvasEl.style.zIndex = '12';
+        canvasEl.style.opacity = '1';
+        canvasEl.width = window.innerWidth;
+        canvasEl.height = window.innerHeight;
+        this.container.appendChild(canvasEl);
+        this.elements.push(canvasEl);
       }
       return canvas;
     }
@@ -559,7 +562,9 @@ import BackgroundEffect from "./BackgroundEffect";
       if (this.resizeTimeout) {
         clearTimeout(this.resizeTimeout);
       }
-      window.removeEventListener('resize', this.handleResize);
+      if (this.handleResize) {
+        window.removeEventListener('resize', this.handleResize);
+      }
       super.cleanup();
     }
   }
