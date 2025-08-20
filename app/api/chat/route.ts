@@ -26,6 +26,22 @@ export async function POST(req: Request) {
       prefix: 'msg',
       size: 16,
     }),
+    messageMetadata: ({ part }) => {
+      // Send metadata when streaming starts
+      if (part.type === 'start') {
+        return {
+          createdAt: Date.now(),
+          model: 'gpt-4o',
+        };
+      }
+
+      // Send additional metadata when streaming completes
+      if (part.type === 'finish') {
+        return {
+          totalTokens: part.totalUsage.totalTokens,
+        };
+      }
+    },
     onFinish: ({ messages }) => {
       // Save the complete conversation including the new AI response
       saveConversation({ conversationId, messages });

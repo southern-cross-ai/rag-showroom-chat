@@ -4,8 +4,16 @@ import { UIMessage } from 'ai';
 export interface StoredConversation {
   id: string;
   title: string;
+  total_tokens: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TokenUsageStats {
+  totalTokens: number;
+  conversationCount: number;
+  averageTokensPerConversation: number;
+  mostTokensInSingleConversation: number;
 }
 
 // Server-side functions (for API routes)
@@ -66,17 +74,26 @@ export async function saveConversation({
     .eq('conversation_id', conversationId);
 
   // Then insert all messages
-  const messagesToInsert = messages.map((msg, index) => ({
-    id: msg.id,
-    conversation_id: conversationId,
-    role: msg.role,
-    content: {
-      parts: msg.parts,
-      // Include any other UIMessage properties except createdAt which might not exist
-      ...(msg as any).createdAt && { createdAt: (msg as any).createdAt },
-    },
-    message_index: index,
-  }));
+  const messagesToInsert = messages.map((msg, index) => {
+    // Extract token data from metadata if it exists (for assistant messages)
+    const metadata = (msg as any).metadata || {};
+    const tokensUsed = metadata.totalTokens || 0;
+    // const model = metadata.model || null;
+    
+    return {
+      id: msg.id,
+      conversation_id: conversationId,
+      role: msg.role,
+      content: {
+        parts: msg.parts,
+        // Include any other UIMessage properties except createdAt which might not exist
+        ...(msg as any).createdAt && { createdAt: (msg as any).createdAt },
+      },
+      message_index: index,
+      tokens_used: tokensUsed,
+      // model: model,
+    };
+  });
 
   if (messagesToInsert.length > 0) {
     const { error } = await supabase
@@ -98,7 +115,7 @@ export async function getUserConversations(): Promise<StoredConversation[]> {
 
   const { data, error } = await supabase
     .from('conversations')
-    .select('id, title, created_at, updated_at')
+    .select('id, title, total_tokens, created_at, updated_at')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -125,4 +142,55 @@ export async function updateConversationTitle(conversationId: string, title: str
     .eq('id', conversationId);
 
   if (error) throw error;
+}
+
+export interface TokenUsageStats {
+  totalTokens: number;
+  conversationCount: number;
+  averageTokensPerConversation: number;
+  mostTokensInSingleConversation: number;
+}
+
+export async function getUserTokenUsage(): Promise<TokenUsageStats> {
+  const supabase = await createClient();
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Get total tokens and conversation stats
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('total_tokens')
+    .order('total_tokens', { ascending: false });
+
+  if (error) throw error;
+
+  const conversations = data || [];
+  const totalTokens = conversations.reduce((sum, conv) => sum + (conv.total_tokens || 0), 0);
+  const conversationCount = conversations.length;
+  const averageTokensPerConversation = conversationCount > 0 ? Math.round(totalTokens / conversationCount) : 0;
+  const mostTokensInSingleConversation = conversations.length > 0 ? conversations[0].total_tokens : 0;
+
+  return {
+    totalTokens,
+    conversationCount,
+    averageTokensPerConversation,
+    mostTokensInSingleConversation,
+  };
+}
+
+export async function getConversationTokenUsage(conversationId: string): Promise<number> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('total_tokens')
+    .eq('id', conversationId)
+    .single();
+
+  if (error) throw error;
+  return data?.total_tokens || 0;
 }

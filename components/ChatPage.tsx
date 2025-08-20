@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 interface StoredConversation {
   id: string;
   title: string;
+  total_tokens: number;
   created_at: string;
   updated_at: string;
 }

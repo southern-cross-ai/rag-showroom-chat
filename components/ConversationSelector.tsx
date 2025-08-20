@@ -58,8 +58,9 @@ export default function ConversationSelector({
                     }}
                   >
                     <div className="font-medium">{conversation.title}</div>
-                    <div className="text-xs text-gray-400">
-                      Created {new Date(conversation.created_at).toLocaleDateString()}
+                    <div className="text-xs text-gray-400 flex justify-between">
+                      <span>Created {new Date(conversation.created_at).toLocaleDateString()}</span>
+                      <span className="text-cyan-400">{conversation.total_tokens.toLocaleString()} tokens</span>
                     </div>
                   </button>
                 ))}
